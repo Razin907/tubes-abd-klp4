@@ -33,6 +33,7 @@ import csv
 import time
 import random
 import logging
+import argparse
 from datetime import datetime
 from pathlib import Path
 from urllib.parse import urljoin, quote_plus
@@ -496,17 +497,27 @@ def ambil_pdf_dari_detail(driver: webdriver.Chrome, detail_url: str) -> str | No
 # MAIN
 # =============================================================================
 
-def main() -> None:
+def main(target_provinsi: str | None = None) -> None:
     buat_folder(OUTPUT_DIR)
     buat_folder(CSV_DIR)
     _setup_file_logging()
+
+    # Jika target_provinsi diberikan, hanya proses provinsi tersebut
+    if target_provinsi:
+        if target_provinsi not in PROVINSI_MAP:
+            log.error("Provinsi '%s' tidak ditemukan di PROVINSI_MAP!", target_provinsi)
+            log.error("Provinsi valid: %s", list(PROVINSI_MAP.keys()))
+            sys.exit(1)
+        provinsi_items = {target_provinsi: PROVINSI_MAP[target_provinsi]}
+    else:
+        provinsi_items = PROVINSI_MAP
 
     log_csv = OUTPUT_DIR / "log_ekstraksi.csv"
     log.info("=" * 60)
     log.info("  SCRAPER LPP/KER BANK INDONESIA")
     log.info("  Mulai : %s", datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
-    log.info("  Provinsi : %d | Tahun: %d-%d",
-             len(PROVINSI_MAP), TAHUN_MULAI, TAHUN_SELESAI)
+    log.info("  Target   : %s", target_provinsi if target_provinsi else f"Semua ({len(PROVINSI_MAP)} provinsi)")
+    log.info("  Tahun    : %d-%d", TAHUN_MULAI, TAHUN_SELESAI)
     log.info("  Output   : %s", OUTPUT_DIR)
     log.info("=" * 60)
 
@@ -525,7 +536,7 @@ def main() -> None:
     stat = {"total": 0, "ok": 0, "gagal": 0, "skip": 0}
 
     try:
-        for nama_prov, slug in PROVINSI_MAP.items():
+        for nama_prov, slug in provinsi_items.items():
             folder = OUTPUT_DIR / sanitasi(nama_prov)
             buat_folder(folder)
             log.info("\n>>> Provinsi: %s (slug: %s)", nama_prov, slug)
@@ -631,4 +642,15 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser(
+        description="Scraper LPP/KER Bank Indonesia per Provinsi"
+    )
+    parser.add_argument(
+        "--provinsi",
+        type=str,
+        default=None,
+        help="Nama provinsi yang akan di-scrape (contoh: 'Jawa Barat'). "
+             "Jika tidak diisi, semua 34 provinsi akan diproses."
+    )
+    args = parser.parse_args()
+    main(target_provinsi=args.provinsi)

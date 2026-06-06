@@ -66,19 +66,34 @@ with DAG(
     )
 
 
-    # BRONZE + SILVER LAYER: Scraping & Ekstraksi
-    # Menjalankan skrip ektraksi.py
-    # Skrip ini menggunakan Selenium (Chrome Headless) untuk scraping BI,
-    # lalu MinerU/AI untuk mengekstrak data angka dari format PDF ke CSV.
-    task_scrape_and_extract = BashOperator(
+    # BRONZE + SILVER LAYER: Scraping & Ekstraksi PER PROVINSI (Paralel)
+    # Menggunakan Dynamic Task Mapping agar setiap provinsi menjadi task tersendiri.
+    # Airflow Celery Executor akan mendistribusikan task-task ini ke semua Worker
+    # yang tersedia (laptop Razin + laptop Hanna) secara otomatis!
+    #
+    # max_active_tis_per_dag=2 → maksimal 2 Chrome berjalan bersamaan
+    # agar tidak membebani memori terlalu berat.
+    PROVINSI_LIST = [
+        "Aceh", "Sumatera Utara", "Sumatera Barat", "Riau", "Jambi",
+        "Sumatera Selatan", "Bengkulu", "Lampung", "Kepulauan Bangka Belitung",
+        "Kepulauan Riau", "DKI Jakarta", "Jawa Barat", "Jawa Tengah",
+        "DI Yogyakarta", "Jawa Timur", "Banten", "Bali",
+        "Nusa Tenggara Barat", "Nusa Tenggara Timur", "Kalimantan Barat",
+        "Kalimantan Tengah", "Kalimantan Selatan", "Kalimantan Timur",
+        "Kalimantan Utara", "Sulawesi Utara", "Sulawesi Tengah",
+        "Sulawesi Selatan", "Sulawesi Tenggara", "Gorontalo", "Sulawesi Barat",
+        "Maluku", "Maluku Utara", "Papua Barat", "Papua",
+    ]
+
+    task_scrape_and_extract = BashOperator.partial(
         task_id='scrape_and_extract_to_bronze_silver',
-        bash_command=(
-            f"cd {AIRFLOW_SRC} && "
-            f"PYTHONPATH={AIRFLOW_SRC} "
-            f"python {AIRFLOW_SRC}/ektraksi.py"
-        ),
-        # Timeout 8 jam karena proses ekstraksi 34 provinsi
-        execution_timeout=timedelta(hours=8),
+        execution_timeout=timedelta(hours=2),
+        max_active_tis_per_dag=2,
+    ).expand(
+        bash_command=[
+            f"cd {AIRFLOW_SRC} && PYTHONPATH={AIRFLOW_SRC} python {AIRFLOW_SRC}/ektraksi.py --provinsi \"{prov}\""
+            for prov in PROVINSI_LIST
+        ]
     )
 
 
