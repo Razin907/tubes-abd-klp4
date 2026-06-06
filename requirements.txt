@@ -1,0 +1,22 @@
+# ============================================================
+# requirements.txt
+# Daftar dependensi Python untuk pipeline ekstraksi data BI
+# ============================================================
+# Cara install:
+#   pip install -r requirements.txt
+
+# Web Scraping
+selenium>=4.0.0
+webdriver-manager>=4.0.0
+
+# HTTP Client
+requests>=2.31.0
+
+# Data Processing
+pandas>=2.0.0
+
+# Progress Bar
+tqdm>=4.65.0
+
+# MinIO Object Storage Client
+minio>=7.0.0
