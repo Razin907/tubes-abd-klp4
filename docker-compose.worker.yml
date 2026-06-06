@@ -27,10 +27,13 @@ services:
       DUMB_INIT_SETSID: "0"
     volumes:
       - ./dags:/opt/airflow/dags
-      - ./logs:/opt/airflow/logs
+      - worker_logs:/opt/airflow/logs   # Named volume, dikelola Docker (bebas permission error)
       - ./config:/opt/airflow/config
       - ./plugins:/opt/airflow/plugins
       - ./src:/opt/airflow/src
       - ./data:/opt/airflow/data
     user: "${AIRFLOW_UID:-50000}:0"
     restart: always
+
+volumes:
+  worker_logs:   # Docker yang mengurus permissionnya, bukan Windows
