@@ -36,13 +36,27 @@ with DAG(
     # BRONZE LAYER: Pengecekan Website BI
     def check_website_bi():
         import requests
+        headers = {
+            "User-Agent": (
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                "AppleWebKit/537.36 (KHTML, like Gecko) "
+                "Chrome/125.0.0.0 Safari/537.36"
+            )
+        }
         try:
-            resp = requests.get("https://www.bi.go.id", timeout=15)
-            if resp.status_code == 200:
-                logging.info("Website Bank Indonesia dapat diakses. Siap memulai ekstraksi!")
+            # allow_redirects=False agar kita cukup cek apakah server merespons
+            # Status 200 atau 302 sama-sama berarti server aktif
+            resp = requests.get(
+                "https://www.bi.go.id",
+                timeout=15,
+                headers=headers,
+                allow_redirects=False
+            )
+            if resp.status_code in [200, 301, 302, 303]:
+                logging.info(f"Website Bank Indonesia aktif (status: {resp.status_code}). Siap memulai ekstraksi!")
                 return "OK"
             else:
-                raise Exception(f"Status code: {resp.status_code}")
+                raise Exception(f"Website BI merespons dengan status tidak dikenal: {resp.status_code}")
         except Exception as e:
             raise Exception(f"Website BI tidak dapat diakses: {e}")
 
