@@ -350,6 +350,11 @@ docker compose logs -f airflow-worker
 
 **Verifikasi:** Buka **`http://localhost:5555`** (Flower Dashboard) di laptop Master untuk memastikan laptop teman Anda (`celery@...`) muncul di daftar Worker aktif secara *real-time*.
 
+**Langkah 4: Menambah Worker ke-3, ke-4, dst (Scalling Out)**
+Jika Anda memiliki 3 atau 4 teman lain yang ingin menyumbang komputasi laptop mereka, prosesnya **100% sama dengan Langkah 2**. 
+Satu-satunya yang membedakan adalah mereka harus mengisi variabel `WORKER_HOSTNAME` dengan nama mereka sendiri di file `.env` (contoh: `WORKER_HOSTNAME=budi`, `WORKER_HOSTNAME=andi`). 
+Semakin banyak worker yang bergabung, semakin cepat 34 Provinsi ini selesai di-scraping karena Airflow akan membagi beban tugas secara adil ke semua worker yang aktif.
+
 ---
 
 ### 7. Tahap Visualisasi Data (BI Dashboard)
