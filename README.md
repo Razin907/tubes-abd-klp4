@@ -298,36 +298,57 @@ Tunggu ~1-2 menit, lalu buka **`http://localhost:8080`**
 ---
 
 ### Cara C: Setup Teman sebagai Worker (Komputasi Terdistribusi)
-Agar laptop teman bergabung sebagai *Worker* sehingga pipeline berjalan paralel di banyak mesin sekaligus.
+Agar laptop teman bergabung sebagai *Worker* sehingga pipeline berjalan paralel di banyak mesin sekaligus (Sistem terdistribusi Master-Worker).
 
-**Prasyarat:** Semua laptop (termasuk laptop Anda sendiri sebagai Master) harus terhubung ke satu jaringan. Jika berbeda lokasi, install [ZeroTier](https://www.zerotier.com/download/) di **semua laptop** dan bergabung ke satu **Network ID** yang sama. Setiap laptop akan mendapat **IP ZeroTier yang unik**; laptop Anda (Master) menggunakan IP ZeroTier-nya sebagai alamat yang dituju oleh semua Worker.
+**Prasyarat:** Semua laptop harus berada di satu jaringan. Jika beda lokasi, gunakan VPN seperti [ZeroTier](https://www.zerotier.com/download/) dan pastikan semua bergabung ke **Network ID** yang sama.
 
-**Di laptop Anda (Si Master) — cari IP ZeroTier:**
+**Langkah 1: Di Laptop Master (Anda) — Cari IP Address**
 ```bash
-# Di Windows:
+# Di Windows (Buka CMD/PowerShell):
 ipconfig
-# Cari bagian "ZeroTier One" → catat IPv4 Address (contoh: 10.147.17.52)
+# Cari bagian "ZeroTier One" (atau WiFi) → catat IPv4 Address (contoh: 10.43.86.152)
 ```
-Pastikan `docker compose up -d` sudah berjalan di laptop Anda.
+Pastikan sistem Master sudah berjalan (`docker compose up -d`).
 
-**Di laptop teman (Si Worker) — 3 langkah:**
+**Langkah 2: Setup Awal di Laptop Worker (Teman)**
 ```bash
 # 1. Clone proyek dari GitHub
-git clone <URL-repo-GitHub>
-cd tubes
+git clone https://github.com/Razin907/tubes-abd-klp4.git
+cd tubes-abd-klp4
 
-# 2. Buat file .env yang mengarah ke IP ZeroTier laptop Anda (Si Master)
-#    Ganti 10.147.17.52 dengan IP ZeroTier Anda yang sebenarnya!
-echo "AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@10.147.17.52/airflow" > .env
-echo "AIRFLOW__CELERY__RESULT_BACKEND=db+postgresql://airflow:airflow@10.147.17.52/airflow" >> .env
-echo "AIRFLOW__CELERY__BROKER_URL=redis://:@10.147.17.52:6379/0" >> .env
-echo "MINIO_ENDPOINT=10.147.17.52:9000" >> .env
+# 2. Buat file .env yang mengarah ke IP Master (Ganti 10.43.86.152 dengan IP Master Anda!)
+#    Ganti 'nama_teman' dengan nama asli pemilik laptop agar mudah dikenali di Flower!
+echo "AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@10.43.86.152/airflow" > .env
+echo "AIRFLOW__CELERY__RESULT_BACKEND=db+postgresql://airflow:airflow@10.43.86.152/airflow" >> .env
+echo "AIRFLOW__CELERY__BROKER_URL=redis://:@10.43.86.152:6379/0" >> .env
+echo "MINIO_ENDPOINT=10.43.86.152:9000" >> .env
+echo "AIRFLOW_UID=50000" >> .env
+echo "AIRFLOW_PROJ_DIR=." >> .env
+echo "WORKER_HOSTNAME=nama_teman" >> .env
 
-# 3. Nyalakan HANYA layanan Worker (build image otomatis)
-docker compose up -d --build airflow-worker
+# 3. Nyalakan Worker menggunakan file konfigurasi khusus worker
+docker compose -f docker-compose.worker.yml up -d --build
+```
+*Worker TIDAK menjalankan database atau webserver, ia hanya menerima perintah komputasi dari Master melalui Redis.*
+
+**Langkah 3: Mengelola Worker Sehari-hari (Troubleshooting & Update)**
+Jika ada *update* kode baru dari GitHub, atau jika Worker tiba-tiba **mati/terputus**, teman Anda cukup menjalankan perintah ini:
+```bash
+# Ambil kode terbaru dari GitHub
+git pull
+
+# Matikan kontainer worker yang lama/macet
+docker compose -f docker-compose.worker.yml down
+
+# Nyalakan ulang worker
+docker compose -f docker-compose.worker.yml up -d
+```
+Jika Worker tetap membandel, jalankan pengecekan log:
+```bash
+docker compose logs -f airflow-worker
 ```
 
-**Verifikasi:** Buka **`http://localhost:5555`** di laptop Anda untuk melihat semua Worker yang terhubung secara *real-time* via Flower (Celery Monitor).
+**Verifikasi:** Buka **`http://localhost:5555`** (Flower Dashboard) di laptop Master untuk memastikan laptop teman Anda (`celery@...`) muncul di daftar Worker aktif secara *real-time*.
 
 ---
 
