@@ -1,7 +1,10 @@
 venv/
 paper/
 data/
+logs/
 __pycache__/
 *.pyc
 .env
 *.log
+.vscode/
+.idea/
