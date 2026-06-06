@@ -352,8 +352,13 @@ docker compose logs -f airflow-worker
 
 **Langkah 4: Menambah Worker ke-3, ke-4, dst (Scalling Out)**
 Jika Anda memiliki 3 atau 4 teman lain yang ingin menyumbang komputasi laptop mereka, prosesnya **100% sama dengan Langkah 2**. 
-Satu-satunya yang membedakan adalah mereka harus mengisi variabel `WORKER_HOSTNAME` dengan nama mereka sendiri di file `.env` (contoh: `WORKER_HOSTNAME=budi`, `WORKER_HOSTNAME=andi`). 
-Semakin banyak worker yang bergabung, semakin cepat 34 Provinsi ini selesai di-scraping karena Airflow akan membagi beban tugas secara adil ke semua worker yang aktif.
+Satu-satunya yang membedakan adalah mereka harus mengisi variabel `WORKER_HOSTNAME` dengan nama mereka sendiri di file `.env` (contoh: `WORKER_HOSTNAME=budi`). 
+
+> ⚠️ **SANGAT PENTING: UPDATE KODE DAG!**
+> Secara *default*, DAG dibatasi hanya menjalankan 2 task bersamaan (`max_active_tis_per_dag=2` di file `dags/bi_pipeline_dag.py`). 
+> Jika total laptop yang bekerja ada 4 (1 Master + 3 Worker), Anda **WAJIB mengubah** baris kode tersebut menjadi `max_active_tis_per_dag=4` di laptop Master, lalu dorong ke GitHub (`git push`). Jika tidak diubah, laptop tambahan hanya akan menganggur menunggu giliran!
+
+Semakin banyak worker yang bergabung dan semakin tinggi nilai `max_active_tis_per_dag`, semakin cepat 34 Provinsi ini selesai diproses.
 
 ---
 
