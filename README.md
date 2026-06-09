@@ -169,7 +169,7 @@ Arsitektur Medallion adalah pola desain yang dipopulerkan oleh **Databricks** (p
 |-------|-----|----------------------|
 | 🥉 **Bronze** | Data mentah apa adanya | `data/<Provinsi>/*.pdf` & `*.md` |
 | 🥈 **Silver** | Data terstruktur, dibersihkan | `data/hasil_ekstraksi/*.csv` (8 file) |
-| 🥇 **Gold** | Data gabungan, siap analisis | `data/gold_kesenjangan_regional_master.csv` |
+| 🥇 **Gold** | Data gabungan, diimputasi (ffill/bfill), siap analisis | `data/gold_kesenjangan_regional_master.csv` |
 
 **Mengapa bertahap?** Karena jika proses pembersihan gagal di tengah jalan (misalnya AI MinerU salah membaca angka), saya bisa menelusuri kembali (*trace*) ke lapisan sebelumnya tanpa harus memulai dari nol. Ini disebut **data lineage** — salah satu pilar utama *Data Governance*.
 
@@ -354,7 +354,7 @@ docker compose logs -f airflow-worker
 Jika Anda memiliki 3 atau 4 teman lain yang ingin menyumbang komputasi laptop mereka, prosesnya **100% sama dengan Langkah 2**. 
 Satu-satunya yang membedakan adalah mereka harus mengisi variabel `WORKER_HOSTNAME` dengan nama mereka sendiri di file `.env` (contoh: `WORKER_HOSTNAME=budi`). 
 
-> ⚠️ **SANGAT PENTING: UPDATE KODE DAG!**
+> **SANGAT PENTING: UPDATE KODE DAG!**
 > Secara *default*, DAG dibatasi hanya menjalankan 2 task bersamaan (`max_active_tis_per_dag=2` di file `dags/bi_pipeline_dag.py`). 
 > Jika total laptop yang bekerja ada 4 (1 Master + 3 Worker), Anda **WAJIB mengubah** baris kode tersebut menjadi `max_active_tis_per_dag=4` di laptop Master, lalu dorong ke GitHub (`git push`). Jika tidak diubah, laptop tambahan hanya akan menganggur menunggu giliran!
 
@@ -362,8 +362,18 @@ Semakin banyak worker yang bergabung dan semakin tinggi nilai `max_active_tis_pe
 
 ---
 
-### 7. Tahap Visualisasi Data (BI Dashboard)
-*(Bagian ini akan ditambahkan setelah implementasi Metabase selesai dibangun).*
+### 7. Tahap Visualisasi Data (Streamlit Dashboard)
+Setelah seluruh data masuk ke Data Lakehouse (MinIO), kita memvisualisasikannya secara *real-time* menggunakan **Streamlit**. Dashboard ini tidak membaca file lokal dari komputer, melainkan terkoneksi **langsung ke server MinIO** (`bucket: gold`), mendemonstrasikan ekosistem Data Lakehouse yang sesungguhnya!
+
+**Cara Menjalankan Dashboard:**
+```bash
+streamlit run dashboard.py
+```
+
+**Fitur Utama Dashboard:**
+1. **Direct MinIO Connection:** Terkoneksi ke Data Lake via `minio-python`. Memiliki sistem *fallback* cerdas yang otomatis membaca data lokal jika server MinIO sedang mati (*fail-safe*).
+2. **Data Imputasi Sempurna:** Berkat metode *Forward-Fill* dan *Backward-Fill* di Gold Layer, *Line Chart* tren tahunan menjadi mulus (tidak putus-putus/bolong).
+3. **Analisis Komprehensif:** Dilengkapi visualisasi metrik agregat, komparasi antarprovinsi (*Bar Chart*), dan korelasi antarindikator (*Scatter Plot* seperti IPM vs Kemiskinan).
 
 ---
 
@@ -394,7 +404,8 @@ Ini adalah jantung analitis dari proyek saya.
 ### 3. `src/transform_gold_layer.py` (Sang Peracik / *Data Modeler*)
 Skrip ini bertugas memoles data di tahap akhir.
 - **Tugas Utama:** Menggunakan library `Pandas` untuk membuka 8 kepingan file CSV dari *Silver Layer*, lalu menyatukannya dengan operasi SQL `OUTER JOIN` berdasarkan kunci "Provinsi" dan "Tahun".
-- **Keluaran:** 1 buah Master Tabel (**Gold Layer**) yang bersih, bebas duplikasi, dan siap disajikan ke alat BI (seperti Metabase atau PowerBI).
+- **Imputasi Data (Filling the Gaps):** Skrip ini secara otomatis mengisi nilai kosong (*NaN/NULL*) menggunakan teknik **Forward-Fill (ffill)** dan **Backward-Fill (bfill)** yang dikelompokkan secara spesifik per provinsi. Ini krusial untuk memastikan grafik *time-series* tidak putus.
+- **Keluaran:** 1 buah Master Tabel (**Gold Layer**) yang bersih, padat, bebas duplikasi, dan siap disajikan ke alat BI (Streamlit/Metabase).
 
 ### 4. `src/upload_to_minio.py` (Sang Kurir / *Storage Connector*)
 Ini adalah jembatan penghubung antara skrip lokal Python saya dengan *Data Lake* (MinIO) di dalam kontainer Docker.

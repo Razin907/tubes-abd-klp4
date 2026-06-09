@@ -74,7 +74,7 @@ def transform_to_gold_layer(silver_dir: str, gold_file: str):
         # Rapihkan susunan kolom (provinsi, tahun, periode di depan)
         cols = master_df.columns.tolist()
         first_cols = ['provinsi', 'tahun', 'periode']
-        other_cols = [c for c in cols if c not limitations in first_cols]
+        other_cols = [c for c in cols if c not in first_cols]
         # Wait, fix typo in previous logic, python syntax correction
         other_cols = [c for c in cols if c not in first_cols]
         master_df = master_df[first_cols + other_cols]
@@ -82,7 +82,11 @@ def transform_to_gold_layer(silver_dir: str, gold_file: str):
         # Urutkan data berdasarkan Provinsi dan Tahun
         master_df = master_df.sort_values(by=['provinsi', 'tahun', 'periode']).reset_index(drop=True)
 
-        # Simpan ke Gold Layer
+        # IMPUTASI (Data Aggregation & Cleansing for Gold Layer):
+        # Mengisi nilai kosong (NaN) menggunakan metode Forward Fill (ffill) 
+        # lalu Backward Fill (bfill) dikelompokkan per provinsi.
+        # Ini adalah praktik standar di Gold Layer untuk data runtun waktu (time-series).
+        master_df = master_df.groupby('provinsi', group_keys=False).apply(lambda group: group.ffill().bfill())
         master_df.to_csv(gold_file, index=False)
         logging.info(f"Sukses! Gold Layer berhasil dibuat di {gold_file} dengan total {len(master_df)} baris dan {len(master_df.columns)} kolom indikator.")
     else:

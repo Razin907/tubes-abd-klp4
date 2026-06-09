@@ -1,11 +1,7 @@
-# ============================================================
-# docker-compose.worker.yml
-# File ini KHUSUS digunakan oleh laptop WORKER (teman).
-# Jalankan dengan: docker compose -f docker-compose.worker.yml up -d --build
-#
-# Worker TIDAK menjalankan: postgres, redis, webserver, scheduler,
-# airflow-init, atau MinIO. Semua itu sudah ada di laptop Master.
-# ============================================================
+# File ini KHUSUS digunakan oleh laptop worker.
+# Worker TIDAK menjalankan komponen utama. Database (Postgres) & Antrean (Redis) berada di Cloud. 
+# Sedangkan Webserver, Scheduler, dan MinIO berada di laptop master.
+
 
 services:
   airflow-worker:
