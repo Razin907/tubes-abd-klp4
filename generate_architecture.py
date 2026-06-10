@@ -33,7 +33,6 @@ edge_attr = {
 }
 
 with Diagram(
-    name="Arsitektur Sistem Terdistribusi (Hybrid Cloud)",
     show=False,
     filename="gambar/arsitektur_terdistribusi",
     outformat="png",
@@ -42,20 +41,20 @@ with Diagram(
     edge_attr=edge_attr,
     direction="TB"  # Top-to-Bottom
 ):
-    with Cluster("1. Pusat Kontrol"):
+    with Cluster("Pusat Kontrol"):
         flower = Client("Flower Dashboard\n(Monitoring)")
         airflow = Airflow("Airflow Webserver\n& Scheduler")
 
-    with Cluster("2. Cloud Services (Publik)"):
+    with Cluster("Cloud Services (Publik)"):
         upstash = Redis("Upstash Redis\n(Broker Tugas)")
         supabase = Postgresql("Supabase PostgreSQL\n(Metadata)")
 
-    with Cluster("3. Pekerja Paralel (Remote Workers)"):
+    with Cluster("Pekerja Paralel (Remote Workers)"):
         worker1 = Celery("Worker 1")
         worker2 = Celery("Worker 2")
         worker3 = Celery("Worker 3")
 
-    with Cluster("4. Data Lake"):
+    with Cluster("Data Lake"):
         minio = S3("MinIO S3\n(Penyimpanan Akhir)")
 
     # ----------------------------------------------------

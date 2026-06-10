@@ -85,8 +85,9 @@ def transform_to_gold_layer(silver_dir: str, gold_file: str):
         # IMPUTASI (Data Aggregation & Cleansing for Gold Layer):
         # Mengisi nilai kosong (NaN) menggunakan metode Forward Fill (ffill) 
         # lalu Backward Fill (bfill) dikelompokkan per provinsi.
-        # Ini adalah praktik standar di Gold Layer untuk data runtun waktu (time-series).
-        master_df = master_df.groupby('provinsi', group_keys=False).apply(lambda group: group.ffill().bfill())
+        master_df[other_cols] = master_df.groupby('provinsi')[other_cols].ffill()
+        master_df[other_cols] = master_df.groupby('provinsi')[other_cols].bfill()
+        
         master_df.to_csv(gold_file, index=False)
         logging.info(f"Sukses! Gold Layer berhasil dibuat di {gold_file} dengan total {len(master_df)} baris dan {len(master_df.columns)} kolom indikator.")
     else:
