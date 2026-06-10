@@ -412,21 +412,4 @@ tubes/
 ├── .gitignore                   # Daftar file yang tidak di-track Git
 └── README.md                    # Dokumentasi Utama
 ```
-
----
-
-## Referensi & Sumber
-
-| Topik | Sumber | URL |
-|-------|--------|-----|
-| Medallion Architecture | Databricks (Official) | https://www.databricks.com/glossary/medallion-architecture |
-| Apache Airflow | Apache Software Foundation | https://airflow.apache.org/docs/ |
-| MinIO Object Storage | MinIO Inc. | https://min.io/docs/minio/linux/index.html |
-| MinerU (PDF Parser AI) | OpenDataLab | https://mineru.net |
-| Selenium WebDriver | SeleniumHQ | https://www.selenium.dev/documentation/ |
-| Regex (Regular Expression) | Python Official Docs | https://docs.python.org/3/library/re.html |
-| Pandas DataFrame | pandas-dev | https://pandas.pydata.org/docs/ |
-| Docker Compose | Docker Inc. | https://docs.docker.com/compose/ |
-| Data Lineage & Governance | DAMA International | https://www.dama.org/cpages/body-of-knowledge |
-
 ---
