@@ -8,6 +8,17 @@ __pycache__/
 *.log
 .vscode/
 .idea/
-laporan/
-gambar/*
-!gambar/arsitektur_terdistribusi.png
+*.zip
+
+# Ignore LaTeX build files, but KEEP the source (.tex)
+laporan/*.aux
+laporan/*.log
+laporan/*.fls
+laporan/*.fdb_latexmk
+laporan/*.gz
+laporan/*.out
+laporan/*.toc
+laporan/*.lof
+laporan/*.lot
+laporan/*.bbl
+laporan/*.blg
