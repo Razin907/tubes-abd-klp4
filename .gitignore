@@ -11,4 +11,5 @@ __pycache__/
 Kelompok_4_RA_SGD10.md
 Kelompok_4_RA_SGD10.pdf
 laporan/
-gambar/
+gambar/*
+!gambar/arsitektur_terdistribusi.png

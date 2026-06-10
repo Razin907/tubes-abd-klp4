@@ -87,8 +87,8 @@ with DAG(
 
     task_scrape_and_extract = BashOperator.partial(
         task_id='scrape_and_extract_to_bronze_silver',
-        execution_timeout=timedelta(hours=2),
-        max_active_tis_per_dag=6,
+        execution_timeout=timedelta(minutes=5),  # Timeout 5 menit agar task tidak nyangkut selamanya
+        max_active_tis_per_dag=2,  # Ubah ke 2 agar laptop tidak meledak jika dijalankan sendirian
     ).expand(
         bash_command=[
             f"cd {AIRFLOW_SRC} && PYTHONPATH={AIRFLOW_SRC} python {AIRFLOW_SRC}/ektraksi.py --provinsi \"{prov}\""
