@@ -297,68 +297,39 @@ Tunggu ~1-2 menit, lalu buka **`http://localhost:8080`**
 
 ---
 
-### Cara C: Setup Teman sebagai Worker (Komputasi Terdistribusi)
-Agar laptop teman bergabung sebagai *Worker* sehingga pipeline berjalan paralel di banyak mesin sekaligus (Sistem terdistribusi Master-Worker).
+### Cara C: Setup Teman sebagai Worker (Komputasi Terdistribusi Cloud)
+Berkat arsitektur *Cloud* (Supabase untuk Database & Upstash untuk Redis), laptop teman Anda bisa bergabung sebagai *Worker* dari **mana saja di seluruh dunia** tanpa perlu VPN (seperti ZeroTier/Tailscale).
 
-**Prasyarat:** Semua laptop harus berada di satu jaringan. Jika beda lokasi, gunakan VPN seperti [ZeroTier](https://www.zerotier.com/download/) dan pastikan semua bergabung ke **Network ID** yang sama.
+**Prasyarat:** Teman Anda hanya butuh Docker Desktop dan koneksi internet publik.
 
-**Langkah 1: Di Laptop Master (Anda) — Cari IP Address**
-```bash
-# Di Windows (Buka CMD/PowerShell):
-ipconfig
-# Cari bagian "ZeroTier One" (atau WiFi) → catat IPv4 Address (contoh: 10.43.86.152)
-```
-Pastikan sistem Master sudah berjalan (`docker compose up -d`).
-
-**Langkah 2: Setup Awal di Laptop Worker (Teman)**
+**Langkah 1: Di Laptop Worker (Teman)**
 ```bash
 # 1. Clone proyek dari GitHub
 git clone https://github.com/Razin907/tubes-abd-klp4.git
 cd tubes-abd-klp4
 
-# 2. Buat file .env yang mengarah ke IP Master (Ganti 10.43.86.152 dengan IP Master Anda!)
-#    Ganti 'nama_teman' dengan nama asli pemilik laptop agar mudah dikenali di Flower!
-echo "AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@10.43.86.152/airflow" > .env
-echo "AIRFLOW__CELERY__RESULT_BACKEND=db+postgresql://airflow:airflow@10.43.86.152/airflow" >> .env
-echo "AIRFLOW__CELERY__BROKER_URL=redis://:@10.43.86.152:6379/0" >> .env
-echo "MINIO_ENDPOINT=10.43.86.152:9000" >> .env
-echo "AIRFLOW_UID=50000" >> .env
-echo "AIRFLOW_PROJ_DIR=." >> .env
-echo "WORKER_HOSTNAME=nama_teman" >> .env
+# 2. Minta file .env dari Master
+# Teman Anda harus menggunakan file .env yang SAMA PERSIS dengan milik Master
+# (lengkap dengan URL Supabase dan Upstash).
+# NAMUN, ubah baris WORKER_HOSTNAME menjadi nama laptop teman Anda agar mudah dikenali.
+# Contoh isi .env:
+# AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql://...supabase.co...
+# AIRFLOW__CELERY__RESULT_BACKEND=db+postgresql://...supabase.co...
+# AIRFLOW__CELERY__BROKER_URL=rediss://...upstash.io...
+# WORKER_HOSTNAME=worker-hanna
 
-# 3. Nyalakan Worker menggunakan file konfigurasi khusus worker
-docker compose -f docker-compose.worker.yml up -d --build
+# 3. Nyalakan Worker menggunakan konfigurasi khusus
+docker compose -f docker-compose.worker.yaml up -d --build
 ```
-*Worker TIDAK menjalankan database atau webserver, ia hanya menerima perintah komputasi dari Master melalui Redis.*
+*Worker TIDAK menjalankan database atau webserver. Ia murni hanya menjadi "otot" komputasi yang menerima perintah dari Supabase/Upstash.*
 
-**Langkah 3: Mengelola Worker Sehari-hari (Troubleshooting & Update)**
-Jika ada *update* kode baru dari GitHub, atau jika Worker tiba-tiba **mati/terputus**, teman Anda cukup menjalankan perintah ini:
-```bash
-# Ambil kode terbaru dari GitHub
-git pull
-
-# Matikan kontainer worker yang lama/macet
-docker compose -f docker-compose.worker.yml down
-
-# Nyalakan ulang worker
-docker compose -f docker-compose.worker.yml up -d
-```
-Jika Worker tetap membandel, jalankan pengecekan log:
-```bash
-docker compose logs -f airflow-worker
-```
-
-**Verifikasi:** Buka **`http://localhost:5555`** (Flower Dashboard) di laptop Master untuk memastikan laptop teman Anda (`celery@...`) muncul di daftar Worker aktif secara *real-time*.
-
-**Langkah 4: Menambah Worker ke-3, ke-4, dst (Scalling Out)**
-Jika Anda memiliki 3 atau 4 teman lain yang ingin menyumbang komputasi laptop mereka, prosesnya **100% sama dengan Langkah 2**. 
-Satu-satunya yang membedakan adalah mereka harus mengisi variabel `WORKER_HOSTNAME` dengan nama mereka sendiri di file `.env` (contoh: `WORKER_HOSTNAME=budi`). 
+**Langkah 2: Verifikasi & Scaling**
+Buka **`http://localhost:5555`** (Flower Dashboard) di laptop Master untuk memastikan laptop teman Anda (`celery@worker-hanna`) muncul di daftar Worker aktif secara *real-time*.
+Jika ada teman ke-3 atau ke-4 yang ingin bergabung, ulangi Langkah 1 untuk mereka.
 
 > **SANGAT PENTING: UPDATE KODE DAG!**
 > Secara *default*, DAG dibatasi hanya menjalankan 2 task bersamaan (`max_active_tis_per_dag=2` di file `dags/bi_pipeline_dag.py`). 
-> Jika total laptop yang bekerja ada 4 (1 Master + 3 Worker), Anda **WAJIB mengubah** baris kode tersebut menjadi `max_active_tis_per_dag=4` di laptop Master, lalu dorong ke GitHub (`git push`). Jika tidak diubah, laptop tambahan hanya akan menganggur menunggu giliran!
-
-Semakin banyak worker yang bergabung dan semakin tinggi nilai `max_active_tis_per_dag`, semakin cepat 34 Provinsi ini selesai diproses.
+> Jika total laptop yang bekerja bertambah (misal 1 Master + 3 Worker), Anda **WAJIB mengubah** baris kode tersebut menjadi `max_active_tis_per_dag=8` atau lebih di laptop Master, lalu dorong ke GitHub (`git push`). Jika tidak diubah, laptop tambahan hanya akan menganggur menunggu giliran!
 
 ---
 
